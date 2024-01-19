@@ -15,9 +15,9 @@ WITTLE_MODEL = wittle_index(20*21)###u [0.05]
 
 
 pcome = [0.02534504,0.13369194,0.09386043,0.01754024,0.17004173,0.2459021,0.03012342,0.0451653 ]
-bstart_tim = []
+bstart_tim = [100]
 simulation  = queue_simulation("SP","FULL_DROP",pcome,bstart_tim)
 
-total_time = 100
+total_time = 1000
 for tim in range(total_time):
     simulation.run(tim)

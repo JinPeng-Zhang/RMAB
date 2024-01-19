@@ -96,6 +96,9 @@ class MDP():
                         self.ptran[action][s][ss] = self.ptran[action][s][ss] /self.ptran_len[action][s]
                     else:###当没有出现(s,a)样本时，设置ptran(s,a,s)=1
                         self.ptran[action][s][ss] = 1
+    def exp_to_file(self,q,type):
+        pass
+
 
 # MDP_MODEL =  MDP()
 # REWARD_MODEL = W_fair_drop()

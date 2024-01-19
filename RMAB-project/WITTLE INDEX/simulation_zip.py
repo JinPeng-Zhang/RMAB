@@ -1,4 +1,5 @@
 import numpy as np
+from WITTLE_INDEX_CLASS import MDP
 class queue_simulation():
     def __init__(self,algorithm,handling,pcome,bstart_tim):
         self.priority = 8
@@ -48,7 +49,7 @@ class queue_simulation():
             elif self.Congestion_handling == "FULL_DROP":
                 self.DROP_handle(q,come)
             if self.print_log:
-                self.log("time{}ms queue {} come {}".format(times,q+1,come))
+                self.log("time{}ms queue {} come {}".format(times,q,come))
 
     '返回选择的一个发包队列'
     def outpacket(self,times):
@@ -165,6 +166,8 @@ class queue_simulation():
         if self.print_log:
             self.log("queuelen:{}".format(self.queue))
         self.outpacket(times)
+    def exp_store(self,exp,exp_pool:MDP):
+        exp_pool.add_exp(exp)
 
 
 
