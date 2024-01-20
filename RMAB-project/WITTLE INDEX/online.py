@@ -1,6 +1,6 @@
 from WITTLE_INDEX_CLASS import  MDP,W_fair_drop,wittle_index
 from simulation_zip import queue_simulation
-MDP_MODEL =  MDP(25,1000)
+MDP_MODEL =  MDP(20,320000)
 REWARD_MODEL = W_fair_drop(0.4,0.6)
 
 # 在线学习部分：
@@ -11,7 +11,7 @@ REWARD_MODEL = W_fair_drop(0.4,0.6)
 #     5.得到RO R1 PTRAN(转移概率矩阵)后，调用WITTLE_MODEL计算出WITTLE值
 #     6.周期性▲t(建议200ms)循环步骤2-5
 
-WITTLE_MODEL = wittle_index(20*21)###u [0.05]
+WITTLE_MODEL = wittle_index(21*21)
 
 
 pcome = [0.02534504,0.13369194,0.09386043,0.01754024,0.17004173,0.2459021,0.03012342,0.0451653 ]

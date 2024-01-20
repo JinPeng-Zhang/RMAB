@@ -1,7 +1,7 @@
 import numpy as np
-from WITTLE_INDEX_CLASS import MDP
 class queue_simulation():
     def __init__(self,algorithm,handling,pcome,bstart_tim):
+        self.port_index = 1
         self.priority = 8
         self.queue = np.zeros(8)
         self.queue_size = 20
@@ -20,8 +20,13 @@ class queue_simulation():
         self.AQM_MAX_THRESH = 0.8*self.queue_size
         self.AQM_PMAX = 0.2
         #========================WITTLE INDEX=========================#
-        self.vs = int((self.queue_size+1)/0.05)
-        self.WITTLE = np.zeros((self.priority,self.vs))  ####8*21
+        self.vs = int((self.queue_size+1)*(1+1/0.05))
+        self.WITTLE = np.zeros((self.priority,self.vs))  ####8*(21*21)
+        '''
+           经验数据使用字典类型：
+           EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
+           '''
+        self.EXP_POOL = {'PORT':self.port_index,'LEN':0,'q0':[],'q1':[],'q2':[],'q3':[],'q4':[],'q5':[],'q6':[],'q7':[]}
         #=====================throughput\capacity\unit================#
         # simulation时间单位为ms,
         # 队列容量为10MB（参照华为虚拟队列大小），最大容量（状态）单位20，因此一个状态对应500KB
@@ -63,6 +68,7 @@ class queue_simulation():
             q,num = self.MAX_QUEUE_LEN_algorithm()
         if num>0:
             self.queue[q] = self.queue[q]-num
+            self.action_Collect(times)
         if self.print_log:
             if num >0:
                 self.log("time:{} send queue{} {} packets".format(times,q,num))
@@ -81,12 +87,35 @@ class queue_simulation():
             come = self.queue_size - self.queue[q]
             if self.print_log:
                 self.log("queue{} if full,drop {}packets".format(q,drop))
+        '''
+        目前队列为queue[q],接收该时刻的来包后为queue[q]+come,应该在范围[queue[q],queue[q]+come]对ECN_mark函数积分
+        离散
+        '''
+        '''
+        start_q = int(self.queue[q])
         self.queue[q] = self.queue[q]+come
-        for qlen in range(int(self.queue[q])):
+        end_q = int(self.queue[q])
+        for qlen in range(start_q,end_q+1):
             ECN_MARK = self.ECN_MARK_probability(qlen)
             if ECN_MARK == True and self.print_log:
                 self.log("queue{} {}th packet is ecn marked".format(q,qlen))
+        '''
+        '''
+        连续
+        '''
+        before = self.ECN_MARK_probability(self.queue[q])
+        self.queue[q] = self.queue[q]+come
+        after =self.ECN_MARK_probability(self.queue[q])
+        ECN_MARK = (after-before)*np.random.normal(loc=1, scale=0.2, size=None)
+        if ECN_MARK>come:
+            ECN_MARK = come
+        elif ECN_MARK<0:
+            ECN_MARK = 0
+        if self.print_log and ECN_MARK!=0:
+            self.log("queue{} come {} packets and {} packets is ecn marked".format(q,come,ECN_MARK))
     def ECN_MARK_probability(self,qlen):
+        #=======================离散化计算=========================#
+        '''
         if qlen<=self.ECN_KMIN:
             return False
         elif qlen>=self.ECN_KMAX:
@@ -98,21 +127,45 @@ class queue_simulation():
                 return False
             else:
                 return True
+        '''
+        #======================连续函数积分==========================#
+        if qlen<=self.ECN_KMIN:
+            return 0
+        elif qlen<=self.ECN_KMAX:
+            #################
+            return (0+0.5*(qlen-self.ECN_KMIN)*self.ECN_PMAX*(qlen-self.ECN_KMIN)/(self.ECN_KMAX - self.ECN_KMIN))
+        else :
+            return (0+0.5*(self.ECN_KMAX-self.ECN_KMIN)*self.ECN_PMAX+1*(qlen-self.ECN_KMAX))
     def AQM_handle(self,q,come):
         if self.queue[q] + come > self.queue_size:
             drop = self.queue[q] + come - self.queue_size
             come = self.queue_size - self.queue[q]
             if self.print_log:
                 self.log("queue{} if full,drop {}packets".format(q, drop))
+        '''
+        start_q = int(self.queue[q])
         self.queue[q] = (self.queue[q] + come)
+        end_q = int(self.queue[q])
         DROP = 0
-        for qlen in range(int(self.queue[q])):
+        for qlen in range(start_q,end_q+1):
             AQM_DROP = self.AQM_DROP_probability(qlen)
             if AQM_DROP == True and self.print_log:
                 DROP = DROP + 1
                 self.log("queue{} {}th packet is AQM droped".format(q, qlen))
+        '''
+        before = self.ECN_MARK_probability(self.queue[q])
+        self.queue[q] = self.queue[q] + come
+        after = self.ECN_MARK_probability(self.queue[q])
+        DROP = (after - before) * np.random.normal(loc=1, scale=0.1, size=None)
+        if  DROP > come:
+            DROP = come
+        elif  DROP < 0:
+            DROP = 0
+        if self.print_log and  DROP != 0:
+            self.log("queue{} come {} packets and {} packets is ecn marked".format(q, come,  DROP))
         self.queue[q] = self.queue[q] - DROP
     def AQM_DROP_probability(self,qlen):
+        '''
         if qlen <= self.AQM_MIN_THRESH:
             return False
         elif qlen >= self.AQM_MAX_THRESH:
@@ -124,6 +177,14 @@ class queue_simulation():
                 return False
             else:
                 return True
+        '''
+        if qlen <= self.AQM_MIN_THRESH:
+            return 0
+        elif qlen <= self.AQM_MAX_THRESH:
+            #################
+            return (0 + 0.5 * (qlen - self.AQM_MIN_THRESH) * self.AQM_PMAX * (qlen - self.AQM_MIN_THRESH) / (self.AQM_MAX_THRESH - self.AQM_MIN_THRESH))
+        else:
+            return (0 + 0.5 * (self.AQM_MAX_THRESH - self.AQM_MIN_THRESH) * self.AQM_PMAX + 1 * (qlen - self.AQM_MAX_THRESH))
     def DROP_handle(self,q,come):
         if self.queue[q] + come > self.queue_size:
             drop = self.queue[q] + come - self.queue_size
@@ -165,9 +226,12 @@ class queue_simulation():
         self.inpacket(times)
         if self.print_log:
             self.log("queuelen:{}".format(self.queue))
+        self.state_Collect(times)
         self.outpacket(times)
-    def exp_store(self,exp,exp_pool:MDP):
-        exp_pool.add_exp(exp)
+    def state_Collect(self,times):
+        pass
+    def action_Collect(self,times):
+        pass
 
 
 

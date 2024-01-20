@@ -35,7 +35,7 @@ class W_fair_drop():
     def ECN_mark(self,qlen):
         if qlen<self.kmin:
             return 0
-        elif qlen<self.kmax:
+        elif qlen<=self.kmax:
             #################
             return (0+0.5*(qlen-self.kmin)*self.pmax*(qlen-self.kmin)/(self.kmax - self.kmin))/self.normalization_max
         else :
@@ -53,32 +53,33 @@ class MDP():
         self.expercience_pool = []
         self.pool_size = pool_size
         #=======================================
-        self.vs = int((qlen_size+1)/self.u_unit)
-
+        self.vs = int((qlen_size+1)*(1+1/self.u_unit))
+        self.DIR_EXP_POOL = "./EXP_POOL"
 
     def s_to_u_qlen(self,s):
-        qlen = int(s/self.qlen_size)
-        u = (s%self.qlen_size)*self.u_unit
+        qlen = int(s/(self.qlen_size+1))
+        u = (s%(self.qlen_size+1))*self.u_unit
         return u,qlen
-    def add_exp(self,exp):
-        lens = len(self.expercience_pool)
-        if lens>self.pool_size:
-            popexp = self.expercience_pool.pop(0)
-            self.expercience_pool.append(exp)
-            # s, a, ss = popexp
-            # tims = np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])
-            # tims = tims - 1
-            # self.ptran_len[a][s] = self.ptran_len[a][s] - 1
-            # if self.ptran_len[a][s] == 0:
-            #     self.ptran[a][s][ss] = 0
-            # else:
-            #     self.ptran[a][s][ss] = tims / self.ptran_len[a][s]
-        else:
-            self.expercience_pool.append(exp)
-        # s, a, ss = popexp
-        # self.ptran_len[a][s] = (np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])+1)/(self.ptran_len[a][s] + 1)
-        # self.ptran_len[a][s] = self.ptran_len[a][s] + 1
-    def exp_to_ptran(self):
+    # def add_exp(self,exp):
+    #     lens = len(self.expercience_pool)
+    #     if lens>self.pool_size:
+    #         popexp = self.expercience_pool.pop(0)
+    #         self.expercience_pool.append(exp)
+    #         # s, a, ss = popexp
+    #         # tims = np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])
+    #         # tims = tims - 1
+    #         # self.ptran_len[a][s] = self.ptran_len[a][s] - 1
+    #         # if self.ptran_len[a][s] == 0:
+    #         #     self.ptran[a][s][ss] = 0
+    #         # else:
+    #         #     self.ptran[a][s][ss] = tims / self.ptran_len[a][s]
+    #     else:
+    #         self.expercience_pool.append(exp)
+    #     # s, a, ss = popexp
+    #     # self.ptran_len[a][s] = (np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])+1)/(self.ptran_len[a][s] + 1)
+    #     # self.ptran_len[a][s] = self.ptran_len[a][s] + 1
+    def file_exp_to_ptran(self,PORT,q):
+
         self.ptran_len = []
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran_len.append(np.zeros(self.vs))
@@ -96,8 +97,7 @@ class MDP():
                         self.ptran[action][s][ss] = self.ptran[action][s][ss] /self.ptran_len[action][s]
                     else:###当没有出现(s,a)样本时，设置ptran(s,a,s)=1
                         self.ptran[action][s][ss] = 1
-    def exp_to_file(self,q,type):
-        pass
+
 
 
 # MDP_MODEL =  MDP()
