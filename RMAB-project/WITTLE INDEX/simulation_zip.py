@@ -19,14 +19,17 @@ class queue_simulation():
         self.AQM_MIN_THRESH = 0.4*self.queue_size
         self.AQM_MAX_THRESH = 0.8*self.queue_size
         self.AQM_PMAX = 0.2
-        #========================WITTLE INDEX=========================#
+        #========================WITTLE INDEX BDP=========================#
+        self.u_unit = 0.05
         self.vs = int((self.queue_size+1)*(1+1/0.05))
         self.WITTLE = np.zeros((self.priority,self.vs))  ####8*(21*21)
         '''
            经验数据使用字典类型：
            EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
-           '''
+        '''
         self.EXP_POOL = {'PORT':self.port_index,'LEN':0,'q0':[],'q1':[],'q2':[],'q3':[],'q4':[],'q5':[],'q6':[],'q7':[]}
+        self.EXP_cache = {'q0':[],'q1':[],'q2':[],'q3':[],'q4':[],'q5':[],'q6':[],'q7':[]}
+        self.UP_LOAD = False
         #=====================throughput\capacity\unit================#
         # simulation时间单位为ms,
         # 队列容量为10MB（参照华为虚拟队列大小），最大容量（状态）单位20，因此一个状态对应500KB
@@ -68,7 +71,7 @@ class queue_simulation():
             q,num = self.MAX_QUEUE_LEN_algorithm()
         if num>0:
             self.queue[q] = self.queue[q]-num
-            self.action_Collect(times)
+            self.action_Collect(times,q)
         if self.print_log:
             if num >0:
                 self.log("time:{} send queue{} {} packets".format(times,q,num))
@@ -228,10 +231,34 @@ class queue_simulation():
             self.log("queuelen:{}".format(self.queue))
         self.state_Collect(times)
         self.outpacket(times)
+
     def state_Collect(self,times):
-        pass
-    def action_Collect(self,times):
-        pass
+        data = {'TIME':times,'TYPE':'S','DATA':[]}
+        for q in range(self.priority):
+            QLEN = int(self.queue[q])
+            U = np.sum(self.queue[0:q])/np.sum(self.queue)
+            U = round(U/self.u_unit)
+            S = QLEN*21+U
+            data['DATA'].append(S)
+        self.EXP_Collect(data)
+    def action_Collect(self,times,q):
+        data = {'TIME':times,'TYPE':'A','DATA':[0,0,0,0,0,0,0,0]}
+        data['DATA'][q] = 1
+        self.EXP_Collect(data)
+    '''
+    函数接收字典类型：
+    DATA = {'TIME':0,'TYPE':'S'or'A','DATA':[]}
+    经验数据使用字典类型：
+    EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
+    '''
+    def EXP_Collect(self,data:dict):
+        for q in range(self.priority):
+            self.EXP_cache['q{}'.format(q)].append(data['DATA'][q])
+        if data['TYPE'] == 'S' and len(self.EXP_cache['q0'])==3:
+            for q in range(self.priority):
+                self.EXP_POOL['q{}'.format(q)].append(self.EXP_cache['q{}'.format(q)])
+                self.EXP_cache['q{}'.format(q)].clear()
+                self.EXP_POOL['LEN'] = self.EXP_POOL['LEN'] + 1
 
 
 

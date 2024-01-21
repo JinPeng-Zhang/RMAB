@@ -41,7 +41,9 @@ class W_fair_drop():
         else :
             return (0+0.5*(self.kmax-self.kmin)*self.pmax+1*(qlen-self.kmax))/self.normalization_max
     def fair(self,u,a):
-        return  1-(u-u%self.u_unit+self.u_unit)*a
+        #向上取整改为四舍五入
+        #return  1-(u-u%self.u_unit+self.u_unit)*a
+        return 1 - round(u/self.u_unit)*self.u_unit * a
     def Wreward(self,u,qlen,a):
         return self.wf*self.fair(u,a)+self.wecn*self.ECN_mark(qlen)
 
@@ -54,8 +56,12 @@ class MDP():
         self.pool_size = pool_size
         #=======================================
         self.vs = int((qlen_size+1)*(1+1/self.u_unit))
+        self.va = 2  # 动作空间大小
         self.DIR_EXP_POOL = "./EXP_POOL"
-
+        #====================ptran R===================
+        self.ptran = []
+        self.ptran_len = []
+        self.R = []
     def s_to_u_qlen(self,s):
         qlen = int(s/(self.qlen_size+1))
         u = (s%(self.qlen_size+1))*self.u_unit
@@ -78,18 +84,36 @@ class MDP():
     #     # s, a, ss = popexp
     #     # self.ptran_len[a][s] = (np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])+1)/(self.ptran_len[a][s] + 1)
     #     # self.ptran_len[a][s] = self.ptran_len[a][s] + 1
+    '''
+    从EXP文件池中读取数据，计算转移概率
+    '''
     def file_exp_to_ptran(self,PORT,q):
+        port = "PORT_"+str(PORT)
+        file_name = self.DIR_EXP_POOL + './' + port + '/'+'q'+str(q)+'.txt'
 
-        self.ptran_len = []
+        conf_name = self.DIR_EXP_POOL + './' + port + '/'+'conf.txt'
+        conf = open(conf_name)
+        size = int(conf.readline().split('\n')[0])
+        conf.close()
+
+        file = open(file_name,'r')
+        line = file.readline()
+        size_num = 0
+
+        self.ptran_len.clear()
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran_len.append(np.zeros(self.vs))
-        self.ptran = []
+        self.ptran.clear()
         self.ptran.append(np.zeros((self.vs, self.vs)))
         self.ptran.append(np.zeros((self.vs, self.vs)))
-        for exp in self.expercience_pool:
-            s,a,ss = exp
+        while line and size_num<=size:
+            s = int(line.split(" ")[0])
+            a = int(line.split(" ")[1])
+            ss = int(line.split(" ")[2])
             self.ptran_len[a][s] = self.ptran_len[a][s] + 1
             self.ptran[a][s][ss] = self.ptran_len[a][s][ss] + 1
+            size_num = size_num +1
+            line = file.readline()
         for action in range(2):
             for s in range(self.qlen_size):
                 for ss in range(self.qlen_size):
@@ -97,7 +121,14 @@ class MDP():
                         self.ptran[action][s][ss] = self.ptran[action][s][ss] /self.ptran_len[action][s]
                     else:###当没有出现(s,a)样本时，设置ptran(s,a,s)=1
                         self.ptran[action][s][ss] = 1
-
+    def Reward_matrix(self,reward:W_fair_drop):
+        self.R.clear()
+        self.ptran_len.append(np.zeros(self.vs))
+        self.ptran_len.append(np.zeros(self.vs))
+        for a in range(self.va):
+            for s in range(self.vs):
+                u,qlen = self.s_to_u_qlen(s)
+                self.R[a][s] = reward.Wreward(u,qlen,a)
 
 
 # MDP_MODEL =  MDP()

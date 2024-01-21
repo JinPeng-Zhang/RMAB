@@ -26,7 +26,7 @@ class CONFIGURE():
             data = []
             l = 0
             line = file.readline()
-            while line or l<=size-len:
+            while line and l<=size-len:
                 data.append(line)
                 l = l + 1
                 line = file.readline()
