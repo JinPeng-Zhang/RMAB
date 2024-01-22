@@ -1,7 +1,8 @@
 from WITTLE_INDEX_CLASS import  MDP,W_fair_drop,wittle_index
 from simulation_zip import queue_simulation
+from configure_API import CONFIGURE
 MDP_MODEL =  MDP(20,320000)
-REWARD_MODEL = W_fair_drop(0.4,0.6)
+REWARD_MODEL = W_fair_drop(wf=0.2)
 
 # 在线学习部分：
 #     1.观察时间T,采集样本到MDP_MODEL的经验 POOL中
@@ -16,8 +17,18 @@ WITTLE_MODEL = wittle_index(21*21)
 
 pcome = [0.02534504,0.13369194,0.09386043,0.01754024,0.17004173,0.2459021,0.03012342,0.0451653 ]
 bstart_tim = [100]
-simulation  = queue_simulation("SP","FULL_DROP",pcome,bstart_tim)
+simulation  = queue_simulation("MAX_QUEUE_LEN","FULL_DROP",pcome,bstart_tim)
 
-total_time = 1000
+total_time = 150
+
+
+configure = CONFIGURE()
+configure.registration(simulation)
 for tim in range(total_time):
     simulation.run(tim)
+configure.Experience_upload(simulation.port_index)
+simulation.EXP_Clear()
+# MDP_MODEL.file_exp_to_ptran(simulation.port_index,q=1)
+# print(MDP_MODEL.ptran[1][1],MDP_MODEL.ptran_len[1][1])
+#
+# print(simulation.EXP_POOL)

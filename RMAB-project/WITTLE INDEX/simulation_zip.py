@@ -1,6 +1,6 @@
 import numpy as np
 class queue_simulation():
-    def __init__(self,algorithm,handling,pcome,bstart_tim):
+    def __init__(self,algorithm,handling,pcome,burst,burst_version='v1'):
         self.port_index = 1
         self.priority = 8
         self.queue = np.zeros(8)
@@ -8,9 +8,21 @@ class queue_simulation():
         self.Scheduling_algorithm = algorithm###优先级，WITTLE,MAX_QUEUE
         self.Congestion_handling = handling##ECN标记，AQM,drop
         self.pcome = pcome
-        self.btim = list(bstart_tim)####多次突发的起始时间list类型，每个值之间差距100ms以上
-        self.burst = True
-        self.print_log = True
+        #====================burst===============================
+        self.burst_version = burst_version
+        self.burst = []
+        if burst_version=='v1':
+            self.burst = list(burst)
+        else:
+            self.burst = dict(burst)
+        '''
+        v1: busrt = [time1,time2,...,timen]固定模式
+        v2: busrt = {'len':n,'b1':[start_time,end_time,q1_index,q2_index,.....,qk_index],...,'bn':[]}，自定义起始时间和队列，平均突发
+        v3:busrt = {'len':n,'b1':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,'bn':{}},自定义起始时间和队列，自定义队列突发速率
+        v4:busrt ={'len':n,'b1':{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},...,'bn':{'type':'','data':{}}}自定义v1,v2.v3模式
+        '''
+        #========================================================
+        self.print_log = False
         self.handling = np.zeros(8)
         #=======================ECN AQM===============================#
         self.ECN_KMIN = 0.2*self.queue_size
@@ -42,6 +54,7 @@ class queue_simulation():
             come = np.random.normal(loc=self.pcome[q], scale=self.pcome[q]/4, size=None)
             while come<=0:
                 come = np.random.normal(loc=self.pcome[q], scale=self.pcome[q]/4, size=None)
+            '''
             if len(self.btim) !=0:
                 if times >= self.btim[0] and times <= self.btim[0]+100:###持续时间100
                     bcome = self.burst_in()
@@ -50,6 +63,9 @@ class queue_simulation():
                         self.log("rate burst at {} ms,more {}  in queue{}".format(times,bcome,q))
                 elif  times > self.btim[0] + 100:
                     self.btim.pop(0)
+            '''
+            burst_come =self.burst_add_rate(times,q)
+            come = come+burst_come
             if self.Congestion_handling == "ECN":
                 self.ECN_handle(q,come)
             elif self.Congestion_handling == "AQM":
@@ -58,9 +74,10 @@ class queue_simulation():
                 self.DROP_handle(q,come)
             if self.print_log:
                 self.log("time{}ms queue {} come {}".format(times,q,come))
-
-    '返回选择的一个发包队列'
     def outpacket(self,times):
+        '''
+        返回选择的一个发包队列
+        '''
         num = -1
         q = -1
         if self.Scheduling_algorithm == "SP":
@@ -80,9 +97,26 @@ class queue_simulation():
             else:
                 self.log("Scheduling_algorithm name {} is error".format(self.Scheduling_algorithm))
     def log(self,str):
-        print(str+"\n")
-    def burst_in(self):
-        bcome = 1.5*np.random.normal(loc=1, scale=0.2, size=None)/8
+        print(str)
+    def burst_add_rate(self,times,q):
+        bcome = 0
+        if self.burst_version == 'v1':
+            if len(self.burst) != 0:
+                if times >= self.burst[0] and times <= self.burst[0] + 100:  ###持续时间100
+                    bcome = 1.5*np.random.normal(loc=1, scale=0.2, size=None)/8
+                    if self.print_log:
+                        self.log("rate burst at {} ms,more {}  in queue{}".format(times, bcome, q))
+                elif times > self.burst[0] + 100:
+                    self.burst.pop(0)
+        elif self.burst_version == 'v2':
+            '''
+            busrt = {[start_time,end_time,q1_index,q2_index,.....,qk_index]...[]}
+            '''
+            pass
+        elif self.burst_version == 'v3':
+           pass
+        elif self.burst_version == 'v4':
+            pass
         return bcome
     def ECN_handle(self,q,come):
         if self.queue[q]+come>self.queue_size:
@@ -245,20 +279,30 @@ class queue_simulation():
         data = {'TIME':times,'TYPE':'A','DATA':[0,0,0,0,0,0,0,0]}
         data['DATA'][q] = 1
         self.EXP_Collect(data)
-    '''
-    函数接收字典类型：
-    DATA = {'TIME':0,'TYPE':'S'or'A','DATA':[]}
-    经验数据使用字典类型：
-    EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
-    '''
     def EXP_Collect(self,data:dict):
+        '''
+        函数接收字典类型：
+        DATA = {'TIME':0,'TYPE':'S'or'A','DATA':[]}
+        cache数据类型：
+        EXP_cache = {'q0':[],'q1':[],'q2':[],'q3':[],'q4':[],'q5':[],'q6':[],'q7':[]}
+        经验数据使用字典类型：
+        EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
+        '''
         for q in range(self.priority):
             self.EXP_cache['q{}'.format(q)].append(data['DATA'][q])
-        if data['TYPE'] == 'S' and len(self.EXP_cache['q0'])==3:
+        if data['TYPE'] == 'S' and len(self.EXP_cache['q0']) == 3:
             for q in range(self.priority):
+
                 self.EXP_POOL['q{}'.format(q)].append(self.EXP_cache['q{}'.format(q)])
-                self.EXP_cache['q{}'.format(q)].clear()
-                self.EXP_POOL['LEN'] = self.EXP_POOL['LEN'] + 1
+                if self.print_log:
+                    self.log(f"S：q{q}:{self.EXP_cache['q{}'.format(q)]}")
+                self.EXP_cache['q{}'.format(q)] = []
+                self.EXP_cache['q{}'.format(q)].append(data['DATA'][q])
+            self.EXP_POOL['LEN'] = self.EXP_POOL['LEN'] + 1
+
+    def EXP_Clear(self):
+        for q in range(self.priority):
+            self.EXP_POOL['q{}'.format(q)].clear()
 
 
 

@@ -21,9 +21,9 @@ class wittle_index():
                         break
 #REWARD计算
 class W_fair_drop():
-    def __init__(self,wf,wecn):
+    def __init__(self,wf):
         self.wf = wf
-        self.wecn = wecn
+        self.wecn = 1-wf
         self.max_qlen = 20
         #======================ECN MARK======================#
         self.kmin = self.max_qlen*0.2
@@ -45,7 +45,7 @@ class W_fair_drop():
         #return  1-(u-u%self.u_unit+self.u_unit)*a
         return 1 - round(u/self.u_unit)*self.u_unit * a
     def Wreward(self,u,qlen,a):
-        return self.wf*self.fair(u,a)+self.wecn*self.ECN_mark(qlen)
+        return self.wf*self.fair(u,a)+self.wecn*(1-self.ECN_mark(qlen))
 
 class MDP():
     def __init__(self,qlen_size,pool_size):
@@ -84,19 +84,24 @@ class MDP():
     #     # s, a, ss = popexp
     #     # self.ptran_len[a][s] = (np.around(self.ptran[a][s][ss] * self.ptran_len[a][s])+1)/(self.ptran_len[a][s] + 1)
     #     # self.ptran_len[a][s] = self.ptran_len[a][s] + 1
-    '''
-    从EXP文件池中读取数据，计算转移概率
-    '''
+
     def file_exp_to_ptran(self,PORT,q):
+        '''
+           从EXP文件池中读取数据，计算转移概率
+        '''
         port = "PORT_"+str(PORT)
         file_name = self.DIR_EXP_POOL + './' + port + '/'+'q'+str(q)+'.txt'
 
         conf_name = self.DIR_EXP_POOL + './' + port + '/'+'conf.txt'
         conf = open(conf_name)
-        size = int(conf.readline().split('\n')[0])
+        #size = int(conf.readline().split('\n')[0])
         conf.close()
 
         file = open(file_name,'r')
+        #=======exp_pool文件第一行记录了经验数量===================
+        line = file.readline()
+        size = int(line.split("\n")[0])
+
         line = file.readline()
         size_num = 0
 
@@ -104,14 +109,16 @@ class MDP():
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran.clear()
-        self.ptran.append(np.zeros((self.vs, self.vs)))
-        self.ptran.append(np.zeros((self.vs, self.vs)))
-        while line and size_num<=size:
+        self.ptran.append(np.zeros((self.vs, self.vs),dtype=float))
+        self.ptran.append(np.zeros((self.vs, self.vs),dtype=float))
+        #==========当size_num=size时已经说明处理了将经验全部读取================
+        while line and size_num<size:
+
             s = int(line.split(" ")[0])
             a = int(line.split(" ")[1])
-            ss = int(line.split(" ")[2])
+            ss = int(line.split(" ")[2].split("\n")[0])
             self.ptran_len[a][s] = self.ptran_len[a][s] + 1
-            self.ptran[a][s][ss] = self.ptran_len[a][s][ss] + 1
+            self.ptran[a][s][ss] = self.ptran[a][s][ss] + 1
             size_num = size_num +1
             line = file.readline()
         for action in range(2):
@@ -119,28 +126,26 @@ class MDP():
                 for ss in range(self.qlen_size):
                     if self.ptran_len[action][s] !=0:
                         self.ptran[action][s][ss] = self.ptran[action][s][ss] /self.ptran_len[action][s]
-                    else:###当没有出现(s,a)样本时，设置ptran(s,a,s)=1
+                    elif s == ss:###当没有出现(s,a)样本时，设置ptran(s,a,s)=1
                         self.ptran[action][s][ss] = 1
     def Reward_matrix(self,reward:W_fair_drop):
+        '''
+        返回Reward矩阵，
+        '''
         self.R.clear()
-        self.ptran_len.append(np.zeros(self.vs))
-        self.ptran_len.append(np.zeros(self.vs))
+        self.R.append(np.zeros(self.vs))
+        self.R.append(np.zeros(self.vs))
         for a in range(self.va):
             for s in range(self.vs):
                 u,qlen = self.s_to_u_qlen(s)
                 self.R[a][s] = reward.Wreward(u,qlen,a)
 
 
-# MDP_MODEL =  MDP()
-# REWARD_MODEL = W_fair_drop()
-# WITTLE_MODEL = wittle_index()
-# 在线学习部分：
-#     1.观察时间T,采集样本到MDP_MODEL的经验 POOL中,元组(s,a,ss)
-#     2.采集样本，并使用MDP_MODEL的exp_to_ptran计算PTRAN(转移概率矩阵)
-#     3.创建数组R0 R1,对应动作0 1,循环状态空间vs,使用MDP_MODEL的函数s_to_u_qlen将状态空间映射的公平性参数u和队列长度qlen
-#     4.根据公平性参数u和队列长度qlen，使用REWARD_MODEL的Wreward函数计算出RO R1
-#     5.得到RO R1 PTRAN(转移概率矩阵)后，调用WITTLE_MODEL计算出WITTLE值
-#     6.周期性▲t(建议5分钟更新一次)循环步骤2-5
+# mdp = MDP(qlen_size=20,pool_size=320000)
+# r = W_fair_drop(wf=0.2)
+# mdp.Reward_matrix(reward=r)
+# print(mdp.R[0],len(mdp.R[0]))
+
 
 
 
