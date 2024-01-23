@@ -20,8 +20,8 @@ class queue_simulation():
         [start_time,end_time)
         v1:busrt = [time1,time2,...,timen]固定模式
         v2:busrt = {'len':n,'b':[[start_time,end_time,q1_index,q2_index,.....,qk_index],...,[]]}，自定义起始时间和队列，平均突发
-        v3:busrt = {'len':n,'b1':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,'bn':{}},自定义起始时间和队列，自定义队列突发速率
-        v4:busrt ={'len':n,'b1':{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},...,'bn':{'type':'','data':{}}}v1,v2.v3混合模式
+        v3:busrt = {'len':n,[{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,{}]},自定义起始时间和队列，自定义队列突发速率
+        v4:busrt = {'len':n,'b':[{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},{'type':'v2','data':[start_time,end_time,q1_index,q2_index,.....,qk_index]},{'type':'v1','data':200}]}v1,v2.v3混合模式
         '''
         #========================================================
         self.print_log = False
@@ -106,11 +106,9 @@ class queue_simulation():
         bcome = 0
         if self.burst_version == 'v1':
             if len(self.burst) != 0:
-                if times >= self.burst[0] and times <= self.burst[0] + 100:  ###持续时间100
+                if times >= self.burst[0] and times < self.burst[0] + 100:  ###持续时间100
                     bcome = 1.5*np.random.normal(loc=1, scale=0.2, size=None)/8
-                    if self.print_log:
-                        self.log("rate burst at {} ms,more {}  in queue{}".format(times, bcome, q))
-                elif times > self.burst[0] + 100:
+                elif times == self.burst[0] + 100:
                     self.burst.pop(0)
         elif self.burst_version == 'v2':
             '''
@@ -125,9 +123,45 @@ class queue_simulation():
             elif q in self.burst['b'][0][2:]:
                 bcome = 1.5*np.random.normal(loc=1, scale=0.2, size=None)/len(self.burst['b'][0][2:])
         elif self.burst_version == 'v3':
-            pass
+            '''
+            {'len':n,'b':[{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,{}]}
+            '''
+            if self.burst['len'] == 0 or times<self.burst['b'][0]['start_time']:
+                return 0
+            elif times == self.burst['b'][0]['end_time']:
+                self.burst['b'].pop(0)
+                self.burst['len'] = self.burst['len'] - 1
+                return 0
+            else:
+                bcome = self.burst['b'][0]['q{}'.format(q)]*np.random.normal(loc=1, scale=0.2, size=None)
         elif self.burst_version == 'v4':
-            pass
+            '''
+            busrt ={'len':n,'b':[{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},{'type':'v2','data':[start_time,end_time,q1_index,q2_index,.....,qk_index]},{'type':'v1','data':200}]}
+            '''
+            if self.burst['len'] == 0:
+                return 0
+            elif self.burst['b'][0]['type'] == 'v1':
+                if times>=self.burst['b'][0]['data'] and times<self.burst['b'][0]['data']+100:
+                    bcome = 1.5 * np.random.normal(loc=1, scale=0.2, size=None) / 8
+                elif times == self.burst['b'][0]['data'] + 100:
+                    self.burst['b'].pop(0)
+                    self.burst['len'] = self.burst['len'] -1
+            elif self.burst['b'][0]['type'] == 'v2':
+                if times>=self.burst['b'][0]['data'][0] and times<self.burst['b'][0]['data'][1]:
+                    bcome = 1.5 * np.random.normal(loc=1, scale=0.2, size=None) / len(self.burst['b'][0]['data'][2:])
+                elif times==self.burst['b'][0]['data'][1]:
+                    self.burst['b'].pop(0)
+                    self.burst['len'] = self.burst['len'] - 1
+            elif self.burst['b'][0]['type'] == 'v3':
+                if times>=self.burst['b'][0]['data']['start_time'] and times<self.burst['b'][0]['data']['end_time']:
+                    bcome = self.burst['b'][0]['data']['q{}'.format(q)] * np.random.normal(loc=1, scale=0.2, size=None)
+                elif times == self.burst['b'][0]['data']['end_time']:
+                    self.burst['b'].pop(0)
+                    self.burst['len'] = self.burst['len'] - 1
+        if bcome<0:
+            return 0
+        elif self.print_log and bcome:
+            self.log("rate burst at {} ms,more {}  in queue{}".format(times, bcome, q))
         return bcome
 
     def ECN_handle(self,q,come):
