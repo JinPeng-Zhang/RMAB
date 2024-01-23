@@ -25,17 +25,17 @@ class wittle_index():
             print(s,self.WI[s],step)
 #REWARD计算
 class W_fair_drop():
-    def __init__(self,wf):
+    def __init__(self,wf,queue_size,u_unit):
         self.wf = wf
         self.wecn = 1-wf
-        self.max_qlen = 20
+        self.max_qlen = queue_size
         #======================ECN MARK======================#
         self.kmin = self.max_qlen*0.2
         self.kmax = self.max_qlen*0.6
         self.pmax = 0.8
         self.normalization_max = 0+0.5*(self.kmax-self.kmin)*self.pmax+1*(self.max_qlen-self.kmax)#用于ECN_MARK归一化
         #=====================FARI ===========================#
-        self.u_unit = 0.05
+        self.u_unit = u_unit
     def ECN_mark(self,qlen):
         if qlen<self.kmin:
             return 0
@@ -52,12 +52,12 @@ class W_fair_drop():
         return self.wf*self.fair(u,a)+self.wecn*(1-self.ECN_mark(qlen))
 
 class MDP():
-    def __init__(self,qlen_size,pool_size):
+    def __init__(self,qlen_size,u_unit):
         self.qlen_size = qlen_size
-        self.u_unit = 0.05
+        self.u_unit = u_unit
         #=================pool==================
-        self.expercience_pool = []
-        self.pool_size = pool_size
+        #self.expercience_pool = []
+        #self.pool_size = pool_size
         #=======================================
         self.vs = int((qlen_size+1)*(1+1/self.u_unit))
         self.va = 2  # 动作空间大小

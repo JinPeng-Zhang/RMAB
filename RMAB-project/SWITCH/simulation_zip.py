@@ -1,10 +1,10 @@
 import numpy as np
 class queue_simulation():
-    def __init__(self,algorithm,handling,pcome,burst,burst_version='v1'):
+    def __init__(self,queue_size,algorithm,handling,pcome,burst,burst_version='v1'):
         self.port_index = 1
         self.priority = 8
         self.queue = np.zeros(8)
-        self.queue_size = 20
+        self.queue_size = queue_size
         self.Scheduling_algorithm = algorithm###优先级，WITTLE,MAX_QUEUE
         self.Congestion_handling = handling##ECN标记，AQM,drop
         self.pcome = pcome

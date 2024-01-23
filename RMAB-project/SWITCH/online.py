@@ -1,11 +1,10 @@
-import numpy as np
-
+import json
+from Simulation_parameter import sim_dict
 from WITTLE_INDEX_CLASS import  MDP,W_fair_drop,wittle_index
 from simulation_zip import queue_simulation
 from configure_API import CONFIGURE
 import time
-pcome = [0.02534504,0.13369194,0.09386043,0.01754024,0.17004173,0.2459021,0.03012342,0.0451653 ]
-bstart_tim = [100]
+
 # 在线学习部分：
 #     1.观察时间T,采集样本到MDP_MODEL的经验 POOL中
 #     2.采集样本，并使用MDP_MODEL的exp_to_ptran计算PTRAN(转移概率矩阵)
@@ -13,22 +12,35 @@ bstart_tim = [100]
 #     4.根据公平性参数u和队列长度qlen，使用REWARD_MODEL的Wreward函数计算出RO R1
 #     5.得到RO R1 PTRAN(转移概率矩阵)后，调用WITTLE_MODEL计算出WITTLE值
 #     6.周期性▲t(建议5min)循环步骤2-5
+with open("simulation.json", "w", encoding='utf-8') as f:
+    sim_json = json.dump(sim_dict,f)
+#===========自定义数据=========================
+with open("simulation.json", encoding="utf-8") as f:
+    simulation_parameter = json.load(f)
+pcome = simulation_parameter['pcome']
+bstart_tim = simulation_parameter['bstart_tim']
+queue_size= simulation_parameter['queue_size']
+u_unit = simulation_parameter['u_unit']
+fair = 1+1/u_unit
+pool_size = simulation_parameter['pool_size']
+total_time = simulation_parameter['total_time']
+wittle_update_cycle = simulation_parameter['wittle_update_cycle']
+Scheduling_algorithm = simulation_parameter['Scheduling_algorithm']
+Congestion_handling = simulation_parameter['Congestion_handling']
+burst_version = simulation_parameter['burst_version']
 #===============模块对象创建=======================
-configure = CONFIGURE()
-MDP_MODEL =  MDP(20,320000)
-r = W_fair_drop(wf=0.2)
-MDP_MODEL.Reward_matrix(r)#提前算出奖励矩阵
+configure = CONFIGURE(pool_size=pool_size)
+MDP_MODEL = MDP(queue_size,u_unit)
+REWARD_MODEL = W_fair_drop(wf=0.2,queue_size=queue_size,u_unit=u_unit)
+MDP_MODEL.Reward_matrix(REWARD_MODEL)#提前算出奖励矩阵
 
-REWARD_MODEL = W_fair_drop(wf=0.2)
-WITTLE_MODEL = wittle_index(21*21)
+WITTLE_MODEL = wittle_index((queue_size+1)*fair)
 #==============端口模拟创建========================
-simulation  = queue_simulation("MAX_QUEUE_LEN","FULL_DROP",pcome,burst=bstart_tim,burst_version='v1')
+simulation  = queue_simulation(queue_size,Scheduling_algorithm,Congestion_handling,pcome,burst=bstart_tim,burst_version=burst_version)
 #==============端口注册，分配对应经验池=============
 configure.registration(simulation)
 
-#==============运行设置，时间、逻辑================
-total_time = 100010
-wittle_update_cycle = 100000
+
 start = time.time()
 for tim in range(total_time):
     print(tim)

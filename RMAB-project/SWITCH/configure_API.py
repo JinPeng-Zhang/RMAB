@@ -4,7 +4,7 @@ import time
 from simulation_zip import queue_simulation
 #https://www.zhihu.com/question/584809823指针操作
 class CONFIGURE():
-    def __init__(self):
+    def __init__(self,pool_size):
         self.DIR_EXP_POOL = "./EXP_POOL"
         self.registration_port = []
         #======端口重新注册时，抹除原有数据标志位===========================
@@ -13,7 +13,7 @@ class CONFIGURE():
         self.port_wittle = []
         #============通过append函数，储存端口的经验收集池地址===============
         self.port_exp = []
-        self.pool_size = 320000
+        self.pool_size = pool_size
     def Experience_upload(self,PORT):
         '''
             经验数据使用字典类型：
