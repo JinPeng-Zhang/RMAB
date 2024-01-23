@@ -124,6 +124,6 @@ class CONFIGURE():
             self.port_wittle.append(sim_queue.WITTLE)
             self.port_exp.append(sim_queue.EXP_POOL)
 
-# cof = CONFIGURE()
-# cof.Experience_create(2)
+cof = CONFIGURE(pool_size=320000)
+cof.Experience_create(2)
 
