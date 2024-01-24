@@ -20,3 +20,20 @@ print(list1)  # 列表list1也会同步变化
 ```
 
 该函数特性，适合用于实现模型"配置API"的注册功能
+
+函数注册时，先创建相应的经验池，然后保存端口的小型经验缓冲区和WITTLE矩阵地址，这里的append即使用上述的浅拷贝方式。
+
+```python
+   def registration(self,sim_queue:queue_simulation):
+        self.Experience_create(sim_queue.port_index)
+        if sim_queue.port_index not in self.registration_port:
+            self.registration_port.append(sim_queue.port_index)
+            self.port_wittle.append(sim_queue.WITTLE)
+            self.port_exp.append(sim_queue.EXP_POOL)
+        else:
+            index = self.registration_port.index(sim_queue.port_index)
+            self.port_wittle[index] = sim_queue.WITTLE
+            self.port_exp[index]=sim_queue.EXP_POOL
+```
+
+或者使用PYTHON指针操作：https://www.zhihu.com/question/584809823
