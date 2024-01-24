@@ -50,6 +50,12 @@ class queue_simulation():
         #端口处理速度为每ms一个容量单位，即500KB/MS，4Gbps
         #8个队列单位时间来包速率(无突发)小于4Gbps
         #突发时，设置突发场景为来报速率为10Gbps，持续100ms
+        #====================performance============================#
+        self.performance = {'q0':{'len':0,'drop':0,'ecn':0,'time':0},'q1':{'len':0,'drop':0,'ecn':0,'time':0},\
+                            'q2':{'len':0,'drop':0,'ecn':0,'time':0},'q3':{'len':0,'drop':0,'ecn':0,'time':0},\
+                            'q4':{'len':0,'drop':0,'ecn':0,'time':0},'q5':{'len':0,'drop':0,'ecn':0,'time':0},\
+                            'q6':{'len':0,'drop':0,'ecn':0,'time':0},'q7':{'len':0,'drop':0,'ecn':0,'time':0}}
+        self.performance_update_flag = False
     def inpacket(self,times):
         #服从正态（高斯）分布，均值为到达率,方差为500Mbps,即0.125个单位
         for q in range(self.priority):
@@ -68,14 +74,17 @@ class queue_simulation():
             '''
             burst_come =self.burst_add_rate(times,q)
             come = come+burst_come
+            drop = 0
+            ecn = 0
             if self.Congestion_handling == "ECN":
-                self.ECN_handle(q,come)
+                drop,ecn = self.ECN_handle(q,come)
             elif self.Congestion_handling == "AQM":
-                self.AQM_handle(q,come)
+                drop,ecn =self.AQM_handle(q,come)
             elif self.Congestion_handling == "FULL_DROP":
-                self.DROP_handle(q,come)
+                drop,ecn =self.DROP_handle(q,come)
             if self.print_log:
                 self.log("time{}ms queue {} come {}".format(times,q,come))
+            self.performance_update(drop=drop,ecn=ecn,q=q)
     def outpacket(self,times):
         '''
         返回选择的一个发包队列
@@ -196,7 +205,7 @@ class queue_simulation():
             ECN_MARK = 0
         if self.print_log and ECN_MARK!=0:
             self.log("queue{} come {} packets and {} packets is ecn marked".format(q,come,ECN_MARK))
-
+        return drop,ECN_MARK
     def ECN_MARK_probability(self,qlen):
         #=======================离散化计算=========================#
         '''
@@ -249,7 +258,7 @@ class queue_simulation():
         if self.print_log and  DROP != 0:
             self.log("queue{} come {} packets and {} packets is ecn marked".format(q, come,  DROP))
         self.queue[q] = self.queue[q] - DROP
-
+        return DROP,0
     def AQM_DROP_probability(self,qlen):
         '''
         if qlen <= self.AQM_MIN_THRESH:
@@ -278,7 +287,7 @@ class queue_simulation():
             if self.print_log:
                 self.log("queue{} if full,drop {}packets".format(q, drop))
         self.queue[q] = self.queue[q] + come
-
+        return  drop,0
     def Strict_priority_algorithm(self):
         q = 0
         for _q in range(self.priority):
@@ -364,6 +373,19 @@ class queue_simulation():
             self.EXP_POOL['q{}'.format(q)].clear()
         self.EXP_POOL['LEN'] = 0
         self.UP_LOAD = 0
+    def performance_update(self,drop,ecn,q):
+        '''
+        {'len':0,'drop':0,'ecn':0,'time':0}
+        '''
+        if  self.performance_update_flag:
 
+            drops = self.performance[f'q{q}']['drop']
+            ecns = self.performance[f'q{q}']['ecn']
+            times = self.performance[f'q{q}']['time']
+            lens = self.performance[f'q{q}']['len']
+            self.performance[f'q{q}']['drop'] = (drops*times+drop)/(times+1)
+            self.performance[f'q{q}']['ecn'] = (ecns*times+ecn)/(times+1)
+            self.performance[f'q{q}']['len'] = (lens*times+self.queue[q])/(times+1)
+            self.performance[f'q{q}']['time'] = times +1
 
 

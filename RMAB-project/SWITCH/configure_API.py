@@ -1,8 +1,8 @@
 import os
-import numpy as np
+
 import time
 from simulation_zip import queue_simulation
-#https://www.zhihu.com/question/584809823指针操作
+
 class CONFIGURE():
     def __init__(self,pool_size):
         self.DIR_EXP_POOL = "./EXP_POOL"
@@ -123,7 +123,11 @@ class CONFIGURE():
             self.registration_port.append(sim_queue.port_index)
             self.port_wittle.append(sim_queue.WITTLE)
             self.port_exp.append(sim_queue.EXP_POOL)
+        else:
+            index = self.registration_port.index(sim_queue.port_index)
+            self.port_wittle[index] = sim_queue.WITTLE
+            self.port_exp[index]=sim_queue.EXP_POOL
 
-cof = CONFIGURE(pool_size=320000)
-cof.Experience_create(2)
+# cof = CONFIGURE(pool_size=320000)
+# cof.Experience_create(2)
 
