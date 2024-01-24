@@ -51,9 +51,9 @@ class queue_simulation():
         #8个队列单位时间来包速率(无突发)小于4Gbps
         #突发时，设置突发场景为来报速率为10Gbps，持续100ms
         #====================performance============================#
-        self.performance = {'q0':{'len':0,'drop':0,'ecn':0,'time':0},'q1':{'len':0,'drop':0,'ecn':0,'time':0},\
-                            'q2':{'len':0,'drop':0,'ecn':0,'time':0},'q3':{'len':0,'drop':0,'ecn':0,'time':0},\
-                            'q4':{'len':0,'drop':0,'ecn':0,'time':0},'q5':{'len':0,'drop':0,'ecn':0,'time':0},\
+        self.performance = {'q0':{'len':0,'drop':0,'ecn':0,'time':0},'q1':{'len':0,'drop':0,'ecn':0,'time':0},
+                            'q2':{'len':0,'drop':0,'ecn':0,'time':0},'q3':{'len':0,'drop':0,'ecn':0,'time':0},
+                            'q4':{'len':0,'drop':0,'ecn':0,'time':0},'q5':{'len':0,'drop':0,'ecn':0,'time':0},
                             'q6':{'len':0,'drop':0,'ecn':0,'time':0},'q7':{'len':0,'drop':0,'ecn':0,'time':0}}
         self.performance_update_flag = False
     def inpacket(self,times):
@@ -174,6 +174,7 @@ class queue_simulation():
         return bcome
 
     def ECN_handle(self,q,come):
+        drop = 0
         if self.queue[q]+come>self.queue_size:
             drop = self.queue[q]+come-self.queue_size
             come = self.queue_size - self.queue[q]
@@ -281,6 +282,7 @@ class queue_simulation():
         else:
             return (0 + 0.5 * (self.AQM_MAX_THRESH - self.AQM_MIN_THRESH) * self.AQM_PMAX + 1 * (qlen - self.AQM_MAX_THRESH))
     def DROP_handle(self,q,come):
+        drop = 0
         if self.queue[q] + come > self.queue_size:
             drop = self.queue[q] + come - self.queue_size
             come = self.queue_size - self.queue[q]
@@ -291,20 +293,18 @@ class queue_simulation():
     def Strict_priority_algorithm(self):
         q = 0
         for _q in range(self.priority):
-            if self.queue[_q]>1:
-                return _q,1
+            if self.queue[_q]>0.5:
+                return _q,min(self.queue[_q],1)
         return q,self.queue[q]
 
     def WITTLE_algorithm(self):
-        WI = self.WITTLE[0][self.queue[0]]
+        WI = self.WITTLE[0][self.EXP_cache['q0'][0]]
         q = 0
         for _q in range(self.priority-1):
-            if self.WITTLE[_q+1][self.queue[_q+1]]>WI:
-                WI = self.WITTLE[_q+1][self.queue[_q+1]]
+            if self.WITTLE[_q+1][self.EXP_cache[f'q{_q+1}'][0]]>WI:
+                WI = self.WITTLE[_q+1][self.EXP_cache[f'q{_q+1}'][0]]
                 q = _q+1
-        if self.queue[q]>1:
-            return q,1
-        return q,self.queue[q]
+        return q,min(self.queue[q],1)
 
     def MAX_QUEUE_LEN_algorithm(self):
         QLEN = self.queue[0]
@@ -313,14 +313,14 @@ class queue_simulation():
             if self.queue[_q+1]>QLEN:
                 QLEN = self.queue[_q+1]
                 q = _q+1
-        if self.queue[q]>1:
-            return q,1
-        return q,self.queue[q]
+        # if self.queue[q]>1:
+        #     return q,1
+        return q,min(self.queue[q],1)
 
-    def WITTLE_INSERT(self,WITTLE):
-        for q in range(self.priority):
-            for s in range(self.vs):
-                self.WITTLE[q][s] = WITTLE[q][s]
+    # def WITTLE_INSERT(self,WITTLE):
+    #     for q in range(self.priority):
+    #         for s in range(self.vs):
+    #             self.WITTLE[q][s] = WITTLE[q][s]
 
     def run(self,times):
         self.inpacket(times)
@@ -332,7 +332,7 @@ class queue_simulation():
     def state_Collect(self,times):
         data = {'TIME':times,'TYPE':'S','DATA':[]}
         for q in range(self.priority):
-            QLEN = int(self.queue[q])
+            QLEN = round(self.queue[q])
             U = np.sum(self.queue[0:q])/np.sum(self.queue)
             U = round(U/self.u_unit)
             S = QLEN*21+U

@@ -1,3 +1,4 @@
+import json
 sim_dict = {
     'queue_size': 20,
     'u_unit' : 0.05,
@@ -8,7 +9,13 @@ sim_dict = {
     'bstart_tim' : [100],
     'Scheduling_algorithm' : "MAX_QUEUE_LEN",
     'Congestion_handling' : 'FULL_DROP',
-    'burst_version':'v1'
+    'burst_version':'v1',
+    'wf':0.8
 }
 
 
+
+
+
+with open("./TEST/simulation_v2_2.json", "w", encoding='utf-8') as f:
+    sim_json = json.dump(sim_dict,f,indent=2, sort_keys=True, ensure_ascii=False)
