@@ -10,7 +10,7 @@ class wittle_index():
         # self.R0 = Reward[0]#动作0的REWARD.size = vs
         self.Q = np.random.rand(Vs)
         self.WI = np.ones(Vs)
-        self.gamma = 0.99
+        self.gamma = 0.9
     def calculate_WITTLE(self,R1,R0,ptran):
         print(len(R1),len(R0),np.shape(ptran))
         for s in range(self.vs):
@@ -69,8 +69,9 @@ class MDP():
         #===================update flag================
         self.update = False
     def s_to_u_qlen(self,s):
-        qlen = int(s/(self.qlen_size+1))
-        u = (s%(self.qlen_size+1))*self.u_unit
+        fair = 1+1/self.u_unit
+        qlen = int(s/fair)
+        u = (s%fair)*self.u_unit
         return u,qlen
     # def add_exp(self,exp):
     #     lens = len(self.expercience_pool)
@@ -145,10 +146,12 @@ class MDP():
             for s in range(self.vs):
                 u,qlen = self.s_to_u_qlen(s)
                 self.R[a][s] = reward.Wreward(u,qlen,a)
-
-
-# MDP_MODEL = MDP(qlen_size=20,pool_size=320000)
-# r = W_fair_drop(wf=0.2)
+import  sys
+np.set_printoptions(threshold=sys.maxsize)
+MDP_MODEL = MDP(qlen_size=20,u_unit=0.2)
+MDP_MODEL.file_exp_to_ptran(1,0)
+print(MDP_MODEL.ptran[0])
+# r = W_fair_drop(wf=0.8,queue_size=20,u_unit=0.2)
 # MDP_MODEL.Reward_matrix(reward=r)
 # MDP_MODEL.file_exp_to_ptran(PORT=1,q=0)
 # WITTLE_MODEL = wittle_index(21*21)
@@ -156,7 +159,7 @@ class MDP():
 # for j in range(441):
 #     print(MDP_MODEL.ptran[0][j], np.sum(MDP_MODEL.ptran[0][j]), MDP_MODEL.ptran_len[0][j])
 #     print(MDP_MODEL.ptran[1][j], np.sum(MDP_MODEL.ptran[1][j]), MDP_MODEL.ptran_len[1][j])
-# # print(mdp.R[0],len(mdp.R[0]))
+# print(MDP_MODEL.R[0],len(MDP_MODEL.R[1]))
 
 
 

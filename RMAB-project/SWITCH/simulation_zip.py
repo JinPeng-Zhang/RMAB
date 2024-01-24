@@ -1,6 +1,6 @@
 import numpy as np
 class queue_simulation():
-    def __init__(self,queue_size,algorithm,handling,pcome,burst,burst_version='v1'):
+    def __init__(self,queue_size,u_unit,algorithm,handling,pcome,burst,burst_version='v1'):
         self.port_index = 1
         self.priority = 8
         self.queue = np.zeros(8)
@@ -20,7 +20,7 @@ class queue_simulation():
         [start_time,end_time)
         v1:busrt = [time1,time2,...,timen]固定模式
         v2:busrt = {'len':n,'b':[[start_time,end_time,q1_index,q2_index,.....,qk_index],...,[]]}，自定义起始时间和队列，平均突发
-        v3:busrt = {'len':n,[{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,{}]},自定义起始时间和队列，自定义队列突发速率
+        v3:busrt = {'len':n,'b':[{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate},...,{}]},自定义起始时间和队列，自定义队列突发速率
         v4:busrt = {'len':n,'b':[{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},{'type':'v2','data':[start_time,end_time,q1_index,q2_index,.....,qk_index]},{'type':'v1','data':200}]}v1,v2.v3混合模式
         '''
         #========================================================
@@ -34,8 +34,8 @@ class queue_simulation():
         self.AQM_MAX_THRESH = 0.8*self.queue_size
         self.AQM_PMAX = 0.2
         #========================WITTLE INDEX BDP=========================#
-        self.u_unit = 0.05
-        self.vs = int((self.queue_size+1)*(1+1/0.05))
+        self.u_unit = u_unit
+        self.vs = int((self.queue_size+1)*(1+1/u_unit))
         self.WITTLE = np.zeros((self.priority,self.vs))  ####8*(21*21)
         '''
            经验数据使用字典类型：
@@ -335,7 +335,7 @@ class queue_simulation():
             QLEN = round(self.queue[q])
             U = np.sum(self.queue[0:q])/np.sum(self.queue)
             U = round(U/self.u_unit)
-            S = QLEN*21+U
+            S = QLEN*int(1+1/self.u_unit)+U
             data['DATA'].append(S)
         self.EXP_Collect(data)
 

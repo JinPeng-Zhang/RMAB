@@ -14,13 +14,13 @@ import time
 #     6.周期性▲t(建议5min)循环步骤2-5
 
 #===========自定义数据=========================
-with open("simulation.json", encoding="utf-8") as f:
+with open("./TEST/simulation.json", encoding="utf-8") as f:
     simulation_parameter = json.load(f)
 pcome = simulation_parameter['pcome']
 bstart_tim = simulation_parameter['bstart_tim']
 queue_size= simulation_parameter['queue_size']
 u_unit = simulation_parameter['u_unit']
-fair = 1+1/u_unit
+fair = int(1+1/u_unit)
 pool_size = simulation_parameter['pool_size']
 total_time = simulation_parameter['total_time']
 wittle_update_cycle = simulation_parameter['wittle_update_cycle']
@@ -36,7 +36,7 @@ MDP_MODEL.Reward_matrix(REWARD_MODEL)#提前算出奖励矩阵
 
 WITTLE_MODEL = wittle_index((queue_size+1)*fair)
 #==============端口模拟创建========================
-simulation  = queue_simulation(queue_size,Scheduling_algorithm,Congestion_handling,pcome,burst=bstart_tim,burst_version=burst_version)
+simulation  = queue_simulation(queue_size,u_unit,Scheduling_algorithm,Congestion_handling,pcome,burst=bstart_tim,burst_version=burst_version)
 #==============端口注册，分配对应经验池=============
 configure.registration(simulation)
 
