@@ -24,7 +24,7 @@ class queue_simulation():
         v4:busrt = {'len':n,'b':[{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},{'type':'v2','data':[start_time,end_time,q1_index,q2_index,.....,qk_index]},{'type':'v1','data':200}]}v1,v2.v3混合模式
         '''
         #========================================================
-        self.print_log = True
+        self.print_log = False
         self.handling = np.zeros(8)
         #=======================ECN AQM===============================#
         self.ECN_KMIN = 0.2*self.queue_size
@@ -324,7 +324,7 @@ class queue_simulation():
 
     def run(self,times):
         self.inpacket(times)
-        if self.print_log:
+        if self.print_log or 1:
             self.log("queuelen:{}".format(self.queue))
         self.state_Collect(times)
         self.outpacket(times)

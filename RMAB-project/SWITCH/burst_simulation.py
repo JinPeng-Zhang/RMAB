@@ -116,4 +116,4 @@ class burst_json_create():
 
 
 b = burst_json_create()
-print(b.burst_v2(total_time=100000,proportion=0.02,offset=0))
+print(b.burst_v4(total_time=320000,proportion=0.06,offset=0))

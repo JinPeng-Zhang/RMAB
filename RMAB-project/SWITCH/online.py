@@ -45,7 +45,7 @@ start = time.time()
 for tim in range(total_time):
     print(tim)
     simulation.run(tim)
-    if simulation.UP_LOAD== True:
+    if simulation.UP_LOAD== 'p':
         configure.Experience_upload(simulation.port_index)
         simulation.EXP_Clear()
     if tim !=0 and tim%wittle_update_cycle==0:
@@ -57,6 +57,7 @@ for tim in range(total_time):
         #print(simulation.WITTLE)
 end = time.time()
 print("simulation_times:{}s".format(end-start))
+#simulation_times:40.69900178909302s  total_time320000
 # MDP_MODEL.file_exp_to_ptran(simulation.port_index,q=1)
 # print(MDP_MODEL.ptran[1][1],MDP_MODEL.ptran_len[1][1])
 #

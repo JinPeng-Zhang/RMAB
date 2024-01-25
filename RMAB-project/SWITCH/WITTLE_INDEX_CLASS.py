@@ -8,21 +8,24 @@ class wittle_index():
         #self.ptran = ptran#状态转移概率
         # self.R1 = Reward[1]#动作1的REWARD，size = vs
         # self.R0 = Reward[0]#动作0的REWARD.size = vs
-        self.Q = np.random.rand(Vs)
-        self.WI = np.ones(Vs)
-        self.gamma = 0.9
+        self.gamma = 0.75
     def calculate_WITTLE(self,R1,R0,ptran):
-        print(len(R1),len(R0),np.shape(ptran))
+        Q = np.random.rand(self.vs)
+        WI = np.ones(self.vs)
         for s in range(self.vs):
-            wittle_old = self.WI[s]-1
+            wittle_old = WI[s]-1
             step = 0
-            while abs(wittle_old - self.WI[s])>0.001:
-                wittle_old = self.WI[s]
-                self.WI[s] = R1[s]+np.sum(ptran[1][s][j] * self.Q[j] for j in range(self.vs)) - R0[s] - np.sum(ptran[0][s][j] * self.Q[j] for j in range(self.vs))
-                for _s in range(self.vs):
-                        self.Q[_s] = np.max([R1[_s]-self.WI[s]+self.gamma*np.sum(ptran[1][_s][j] * self.Q[j] for j in range(self.vs)),R0[_s] + self.gamma*np.sum(ptran[0][_s][j] * self.Q[j] for j in range(self.vs))])
+            more_s = 0
+            while abs(wittle_old - WI[s])>0.001 and step<200:
+                wittle_old = WI[s]
+                WI[s] = R1[s]+np.sum(ptran[1][s][j] * Q[j] for j in range(self.vs)) - R0[s] - np.sum(ptran[0][s][j] * Q[j] for j in range(self.vs))
+                for u in range(1+more_s):
+                    for _s in range(self.vs):
+                            Q[_s] = np.max([R1[_s]-WI[s]+self.gamma*np.sum(ptran[1][_s][j] * Q[j] for j in range(self.vs)),R0[_s] + self.gamma*np.sum(ptran[0][_s][j] * Q[j] for j in range(self.vs))])
                 step = step + 1
-            print(s,self.WI[s],step)
+                if step%50 == 0:
+                    more_s = more_s+int(step/50)
+        return WI
 #REWARD计算
 class W_fair_drop():
     def __init__(self,wf,queue_size,u_unit):
@@ -98,6 +101,13 @@ class MDP():
         '''
         port = "PORT_"+str(PORT)
         file_path = self.DIR_EXP_POOL + './' + port + '/'+'q{}'.format(q)+'./'
+
+        self.ptran_len.clear()
+        self.ptran_len.append(np.zeros(self.vs))
+        self.ptran_len.append(np.zeros(self.vs))
+        self.ptran.clear()
+        self.ptran.append(np.zeros((self.vs, self.vs), dtype=float))
+        self.ptran.append(np.zeros((self.vs, self.vs), dtype=float))
         for file_name in os.listdir(file_path):
             if file_name == "conf.txt":
                 continue
@@ -111,12 +121,7 @@ class MDP():
 
             line = file.readline()
 
-            self.ptran_len.clear()
-            self.ptran_len.append(np.zeros(self.vs))
-            self.ptran_len.append(np.zeros(self.vs))
-            self.ptran.clear()
-            self.ptran.append(np.zeros((self.vs, self.vs),dtype=float))
-            self.ptran.append(np.zeros((self.vs, self.vs),dtype=float))
+
             #==========当size_num=size时已经说明处理了将经验全部读取================
             while line and line!="\n":
 
@@ -149,8 +154,16 @@ class MDP():
 import  sys
 np.set_printoptions(threshold=sys.maxsize)
 MDP_MODEL = MDP(qlen_size=20,u_unit=0.2)
-MDP_MODEL.file_exp_to_ptran(1,0)
-print(MDP_MODEL.ptran[0])
+REWARD_MODEL = W_fair_drop(wf=0.2,queue_size=20,u_unit=0.2)
+MDP_MODEL.Reward_matrix(REWARD_MODEL)
+WITTLE_MODEL = wittle_index(126)
+
+
+
+for q in range(8):
+    MDP_MODEL.file_exp_to_ptran(1,q)
+    WI = WITTLE_MODEL.calculate_WITTLE(MDP_MODEL.R[1],MDP_MODEL.R[0],MDP_MODEL.ptran)
+    print(repr(WI.reshape((21,6))))
 # r = W_fair_drop(wf=0.8,queue_size=20,u_unit=0.2)
 # MDP_MODEL.Reward_matrix(reward=r)
 # MDP_MODEL.file_exp_to_ptran(PORT=1,q=0)
