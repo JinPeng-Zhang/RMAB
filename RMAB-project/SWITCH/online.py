@@ -14,7 +14,7 @@ import time
 #     6.周期性▲t(建议5min)循环步骤2-5
 
 #===========自定义数据=========================
-with open("./TEST/simulation.json", encoding="utf-8") as f:
+with open("./TEST/simulation_v4.json", encoding="utf-8") as f:
     simulation_parameter = json.load(f)
 pcome = simulation_parameter['pcome']
 bstart_tim = simulation_parameter['bstart_tim']
@@ -53,7 +53,7 @@ for tim in range(total_time):
             MDP_MODEL.file_exp_to_ptran(simulation.port_index,q)
             WITTLE_MODEL.calculate_WITTLE(R1=MDP_MODEL.R[1],R0=MDP_MODEL.R[0],ptran=MDP_MODEL.ptran)
             configure.WITTLE_UPDATE(WITTLE_MODEL.WI,simulation.port_index,q)
-            print(simulation.WITTLE[q])
+            #print(simulation.WITTLE[q])
         #print(simulation.WITTLE)
 end = time.time()
 print("simulation_times:{}s".format(end-start))
