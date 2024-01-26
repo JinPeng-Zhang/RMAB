@@ -8,7 +8,7 @@ class CONFIGURE():
         self.DIR_EXP_POOL = "./EXP_POOL"
         self.registration_port = []
         #======端口重新注册时，抹除原有数据标志位===========================
-        self.exp_erase = False
+        self.exp_erase = True
         #============通过append函数，储存端口的WITTLE矩阵地址==============
         self.port_wittle = []
         #============通过append函数，储存端口的经验收集池地址===============

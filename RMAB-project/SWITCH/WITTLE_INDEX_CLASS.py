@@ -99,15 +99,16 @@ class MDP():
         '''
            从EXP文件池中读取数据，计算转移概率
         '''
-        port = "PORT_"+str(PORT)
-        file_path = self.DIR_EXP_POOL + './' + port + '/'+'q{}'.format(q)+'./'
-
         self.ptran_len.clear()
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran.clear()
         self.ptran.append(np.zeros((self.vs, self.vs), dtype=float))
         self.ptran.append(np.zeros((self.vs, self.vs), dtype=float))
+        port = "PORT_"+str(PORT)
+        file_path = self.DIR_EXP_POOL + './' + port + '/'+'q{}'.format(q)+'./'
+
+
         for file_name in os.listdir(file_path):
             if file_name == "conf.txt":
                 continue
@@ -151,19 +152,25 @@ class MDP():
             for s in range(self.vs):
                 u,qlen = self.s_to_u_qlen(s)
                 self.R[a][s] = reward.Wreward(u,qlen,a)
-import  sys
-np.set_printoptions(threshold=sys.maxsize)
-MDP_MODEL = MDP(qlen_size=20,u_unit=0.2)
-REWARD_MODEL = W_fair_drop(wf=0.2,queue_size=20,u_unit=0.2)
-MDP_MODEL.Reward_matrix(REWARD_MODEL)
-WITTLE_MODEL = wittle_index(126)
 
 
 
-for q in range(8):
-    MDP_MODEL.file_exp_to_ptran(1,q)
-    WI = WITTLE_MODEL.calculate_WITTLE(MDP_MODEL.R[1],MDP_MODEL.R[0],MDP_MODEL.ptran)
-    print(repr(WI.reshape((21,6))))
+
+
+# import  sys
+# np.set_printoptions(threshold=sys.maxsize)
+# MDP_MODEL = MDP(qlen_size=20,u_unit=0.2)
+# REWARD_MODEL = W_fair_drop(wf=0.2,queue_size=20,u_unit=0.2)
+# MDP_MODEL.Reward_matrix(REWARD_MODEL)
+# WITTLE_MODEL = wittle_index(126)
+
+#
+#
+# for q in range(8):
+#     MDP_MODEL.file_exp_to_ptran(1,0)
+#     WI = WITTLE_MODEL.calculate_WITTLE(MDP_MODEL.R[1],MDP_MODEL.R[0],MDP_MODEL.ptran)
+#     print(MDP_MODEL.ptran)
+#     print(repr(WI.reshape((21,6))))
 # r = W_fair_drop(wf=0.8,queue_size=20,u_unit=0.2)
 # MDP_MODEL.Reward_matrix(reward=r)
 # MDP_MODEL.file_exp_to_ptran(PORT=1,q=0)

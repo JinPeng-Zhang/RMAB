@@ -97,6 +97,8 @@ class queue_simulation():
             q,num = self.WITTLE_algorithm()
         elif self.Scheduling_algorithm == "MAX_QUEUE_LEN":
             q,num = self.MAX_QUEUE_LEN_algorithm()
+        elif self.Scheduling_algorithm == "RANDOM":
+            q,num = self.RANDOM_algorithm()
         if num>0:
             self.queue[q] = self.queue[q]-num
             self.action_Collect(times,q)
@@ -321,10 +323,15 @@ class queue_simulation():
     #     for q in range(self.priority):
     #         for s in range(self.vs):
     #             self.WITTLE[q][s] = WITTLE[q][s]
-
+    def RANDOM_algorithm(self):
+        '''
+        为了统计测试数据
+        '''
+        q = np.random.randint(0,8)
+        return q,min(self.queue[q],1)
     def run(self,times):
         self.inpacket(times)
-        if self.print_log or 1:
+        if self.print_log:
             self.log("queuelen:{}".format(self.queue))
         self.state_Collect(times)
         self.outpacket(times)

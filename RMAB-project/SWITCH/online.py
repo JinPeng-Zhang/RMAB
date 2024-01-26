@@ -14,7 +14,7 @@ import time
 #     6.周期性▲t(建议5min)循环步骤2-5
 
 #===========自定义数据=========================
-with open("./TEST/simulation_v4.json", encoding="utf-8") as f:
+with open("./TEST/simulation_test.json", encoding="utf-8") as f:
     simulation_parameter = json.load(f)
 pcome = simulation_parameter['pcome']
 bstart_tim = simulation_parameter['bstart_tim']
@@ -45,7 +45,7 @@ start = time.time()
 for tim in range(total_time):
     print(tim)
     simulation.run(tim)
-    if simulation.UP_LOAD== 'p':
+    if simulation.UP_LOAD== True:
         configure.Experience_upload(simulation.port_index)
         simulation.EXP_Clear()
     if tim !=0 and tim%wittle_update_cycle==0:

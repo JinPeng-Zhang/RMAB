@@ -38,13 +38,13 @@ class burst_json_create():
         btimes =round(np.random.uniform(0.8,1.2)*total_time*4*proportion/(6))
         tim = offset
         while tim<total_time+offset:
-            q_index = np.random.randint(0,7,size=np.random.randint(1,8))
+            q_index = np.random.randint(0,8,size=np.random.randint(1,8))
             ##去除重复数据
             q_index =list(set(q_index))
             bt_max = int(20*len(q_index)/1.5)
             bt = np.random.randint(bt_max*0.6,bt_max)
             t2_t1 = round(1.5*bt/proportion)
-            start_time = np.random.randint(tim + 1, tim + t2_t1 - bt - 1)
+            start_time = np.random.randint(tim + 1, tim + t2_t1 - bt )
             burst['len'] = burst['len'] + 1
             q_index.insert(0,start_time+bt)
             q_index.insert(0,start_time)
@@ -113,7 +113,28 @@ class burst_json_create():
             if tim == total_time+offset:
                 break
         return burst
+    def test_burst(self,total_time,proportion,offset):
+        burst = {'len': 0, 'b': []}
+        btimes = round( total_time * 4 * proportion / (6))
+        all_t = 0
+        tim = offset
+        while tim < total_time + offset:
+            q_index = np.random.randint(0, 8, size=1)
+            ##去除重复数据
+            q_index = list(set(q_index))
+            bt_max = int(20 * len(q_index) / 1.5)
+            bt = np.random.randint(bt_max * 0.8, bt_max)
+            t2_t1 = round(1.5 * bt / proportion)
+            start_time = np.random.randint(tim + 1, tim + t2_t1 - bt )
+            burst['len'] = burst['len'] + 1
+            q_index.insert(0, start_time + bt)
+            q_index.insert(0, start_time)
+            burst['b'].append(q_index)
+            tim = tim + t2_t1
+            all_t = all_t+bt
+        print(all_t,btimes)
+        return burst
 
 
 b = burst_json_create()
-print(b.burst_v4(total_time=320000,proportion=0.06,offset=0))
+print(b.test_burst(total_time=320000,proportion=0.1,offset=0))
