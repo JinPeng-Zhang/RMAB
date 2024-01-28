@@ -44,7 +44,7 @@ DATA =[[-2.67948021e-03, -4.28565398e-02, -8.20504375e-02,
          7.20308918e-02,  5.89843755e-02, -2.00000000e-01],
        [ 2.02377937e-01,  1.36032939e-01,  9.60065541e-02,
          8.22390835e-02,  6.24038891e-02, -2.00000000e-01]]
-data =DATA[0:-1]
-print(data)
-ax = sns.heatmap(data, xticklabels=False, yticklabels=False)
-plt.show()
+# data =DATA[0:-1]
+# print(data)
+# ax = sns.heatmap(data, xticklabels=False, yticklabels=False)
+# plt.show()
