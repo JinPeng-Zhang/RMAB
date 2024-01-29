@@ -30,7 +30,7 @@ class CONFIGURE():
             tim = int(time.time()*1000)
             file = open(DIR+_q+'./'+'{}.txt'.format(tim),'w')
             for j in range(lens):
-                 file.write("{} {} {}\n".format(exp[_q][j][0],exp[_q][j][1],exp[_q][j][2]))
+                 file.write("{} {} {} {}\n".format(exp[_q][j][0],exp[_q][j][1],exp[_q][j][2],exp[_q][j][3]))
             file.close()
 
             file = open(DIR+'q{}'.format(q)+'./'+'conf.txt','r')

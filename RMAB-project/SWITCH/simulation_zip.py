@@ -58,6 +58,7 @@ class queue_simulation():
         self.performance_update_flag = False
     def inpacket(self,times):
         #服从正态（高斯）分布，均值为到达率,方差为500Mbps,即0.125个单位
+        DROP = []
         for q in range(self.priority):
             come = np.random.normal(loc=self.pcome[q], scale=self.pcome[q]/4, size=None)
             while come<=0:
@@ -85,28 +86,38 @@ class queue_simulation():
             if self.print_log:
                 self.log("time{}ms queue {} come {}".format(times,q,come))
             self.performance_update(drop=drop,ecn=ecn,q=q)
+            DROP.append(drop)
+        if times!=0:
+            self.drop_Collect(times,DROP)
     def outpacket(self,times):
         '''
         返回选择的一个发包队列
         '''
         num = -1
         q = -1
-        if self.Scheduling_algorithm == "SP":
-            q,num = self.Strict_priority_algorithm()
-        elif self.Scheduling_algorithm == "WITTLE":
-            q,num = self.WITTLE_algorithm()
-        elif self.Scheduling_algorithm == "MAX_QUEUE_LEN":
-            q,num = self.MAX_QUEUE_LEN_algorithm()
-        elif self.Scheduling_algorithm == "RANDOM":
-            q,num = self.RANDOM_algorithm()
-        if num>0:
-            self.queue[q] = self.queue[q]-num
-            self.action_Collect(times,q)
+        send_q = []
+        send_num = []
+
+        send = 0
+        while send<1  and num!=0:
+            if self.Scheduling_algorithm == "SP":
+                q, num = self.Strict_priority_algorithm()
+            elif self.Scheduling_algorithm == "WITTLE":
+                q, num = self.WITTLE_algorithm()
+            elif self.Scheduling_algorithm == "MAX_QUEUE_LEN":
+                q, num = self.MAX_QUEUE_LEN_algorithm()
+            if num!=0:
+                self.queue[q] = self.queue[q] - num
+                send_q.append(q)
+                send_num.append(num)
+                send = send + num
+        # elif self.Scheduling_algorithm == "RANDOM":
+        #     q,num = self.RANDOM_algorithm()
+        self.action_Collect(times,send_q)
         if self.print_log:
-            if num >0:
-                self.log("time:{} send queue{} {} packets".format(times,q,num))
-            elif num == 0:
-                self.log("time:{} queues if empty".format(times))
+            if len(send_q) >0:
+                for i in range(len(send_q)):
+                    self.log("time:{} send queue{} {} packets".format(times,send_q[i],send_num[i]))
             else:
                 self.log("Scheduling_algorithm name {} is error".format(self.Scheduling_algorithm))
 
@@ -295,17 +306,21 @@ class queue_simulation():
     def Strict_priority_algorithm(self):
         q = 0
         for _q in range(self.priority):
-            if self.queue[_q]>0.5:
+            if self.queue[_q]>0:
                 return _q,min(self.queue[_q],1)
         return q,self.queue[q]
 
     def WITTLE_algorithm(self):
-        WI = self.WITTLE[0][self.EXP_cache['q0'][0]]
         q = 0
-        for _q in range(self.priority-1):
-            if self.WITTLE[_q+1][self.EXP_cache[f'q{_q+1}'][0]]>WI:
-                WI = self.WITTLE[_q+1][self.EXP_cache[f'q{_q+1}'][0]]
-                q = _q+1
+        while self.queue[q]==0 :
+            q = q+1
+            if q==8:
+                return 0,0
+        WI = self.WITTLE[q][self.EXP_cache['q{}'.format(q)][0]]
+        for _q in range(q+1,8):
+            if self.WITTLE[_q][self.EXP_cache[f'q{_q}'][0]]>WI:
+                WI = self.WITTLE[_q][self.EXP_cache[f'q{_q}'][0]]
+                q = _q
         return q,min(self.queue[q],1)
 
     def MAX_QUEUE_LEN_algorithm(self):
@@ -323,12 +338,12 @@ class queue_simulation():
     #     for q in range(self.priority):
     #         for s in range(self.vs):
     #             self.WITTLE[q][s] = WITTLE[q][s]
-    def RANDOM_algorithm(self):
-        '''
-        为了统计测试数据
-        '''
-        q = np.random.randint(0,8)
-        return q,min(self.queue[q],1)
+    # def RANDOM_algorithm(self):
+    #     '''
+    #     为了统计测试数据
+    #     '''
+    #     q = np.random.randint(0,8)
+    #     return q,min(self.queue[q],1)
     def run(self,times):
         self.inpacket(times)
         if self.print_log:
@@ -346,9 +361,14 @@ class queue_simulation():
             data['DATA'].append(S)
         self.EXP_Collect(data)
 
-    def action_Collect(self,times,q):
+    def action_Collect(self,times,send_q):
         data = {'TIME':times,'TYPE':'A','DATA':[0,0,0,0,0,0,0,0]}
-        data['DATA'][q] = 1
+        for q in send_q:
+            data['DATA'][q] = 1
+        self.EXP_Collect(data)
+
+    def drop_Collect(self, times, drop):
+        data = {'TIME': times, 'TYPE': 'D', 'DATA': drop}
         self.EXP_Collect(data)
 
     def EXP_Collect(self,data:dict):
@@ -358,11 +378,11 @@ class queue_simulation():
         cache数据类型：
         EXP_cache = {'q0':[],'q1':[],'q2':[],'q3':[],'q4':[],'q5':[],'q6':[],'q7':[]}
         经验数据使用字典类型：
-        EXP = {"PORT":2,'LEN':1000,'q0':[[s a s']....[s,a',s']],....,'q7':[s a s']}
+        EXP = {"PORT":2,'LEN':1000,'q0':[[s a d s']....[s,a',d,s']],....,'q7':[s a d,s']}
         '''
         for q in range(self.priority):
             self.EXP_cache['q{}'.format(q)].append(data['DATA'][q])
-        if data['TYPE'] == 'S' and len(self.EXP_cache['q0']) == 3:
+        if data['TYPE'] == 'S' and len(self.EXP_cache['q0']) == 4:
             for q in range(self.priority):
 
                 self.EXP_POOL['q{}'.format(q)].append(self.EXP_cache['q{}'.format(q)])

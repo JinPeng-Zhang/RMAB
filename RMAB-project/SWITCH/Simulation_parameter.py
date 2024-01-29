@@ -63,7 +63,8 @@ sim_dict = {
     'Scheduling_algorithm' : "WITTLE",
     'Congestion_handling' : 'FULL_DROP',
     'burst_version':'v2',
-    'wf':0.2
+    'wf':0.2,
+    'drop_size':1
 }
 
 

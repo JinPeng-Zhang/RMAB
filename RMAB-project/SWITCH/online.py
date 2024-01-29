@@ -31,11 +31,12 @@ Scheduling_algorithm = simulation_parameter['Scheduling_algorithm']
 Congestion_handling = simulation_parameter['Congestion_handling']
 burst_version = simulation_parameter['burst_version']
 wf = simulation_parameter['wf']
+drop_size = simulation_parameter['drop_size']
 #===============模块对象创建=======================
 configure = CONFIGURE(pool_size=pool_size)
-MDP_MODEL = MDP(queue_size,u_unit)
 REWARD_MODEL = W_fair_drop(wf=wf,queue_size=queue_size,u_unit=u_unit)
-MDP_MODEL.Reward_matrix(REWARD_MODEL)#提前算出奖励矩阵
+MDP_MODEL = MDP(queue_size,u_unit,drop_size=drop_size,R_class=REWARD_MODEL)
+MDP_MODEL.Reward_matrix()#提前算出奖励矩阵
 
 WITTLE_MODEL = wittle_index((queue_size+1)*fair)
 #==============端口模拟创建========================
@@ -48,7 +49,7 @@ print(data)
 for q in range(8):
     configure.WITTLE_UPDATE(data,simulation.port_index,q)
 start = time.time()
-for tim in range(total_time):
+for tim in range(100):
     print(tim)
     simulation.run(tim)
     if simulation.UP_LOAD== True:
