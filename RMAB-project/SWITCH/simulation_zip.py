@@ -24,7 +24,7 @@ class queue_simulation():
         v4:busrt = {'len':n,'b':[{'type':'v3','data':{'start_time':100,'end_time':150,'q1':add_rate,'q2':add_rate,.....,'q2':add_rate}},{'type':'v2','data':[start_time,end_time,q1_index,q2_index,.....,qk_index]},{'type':'v1','data':200}]}v1,v2.v3混合模式
         '''
         #========================================================
-        self.print_log = True
+        self.print_log = False
         self.handling = np.zeros(8)
         #=======================ECN AQM===============================#
         self.ECN_KMIN = 0.2*self.queue_size
@@ -55,7 +55,7 @@ class queue_simulation():
                             'q2':{'len':0,'drop':0,'ecn':0,'time':0},'q3':{'len':0,'drop':0,'ecn':0,'time':0},
                             'q4':{'len':0,'drop':0,'ecn':0,'time':0},'q5':{'len':0,'drop':0,'ecn':0,'time':0},
                             'q6':{'len':0,'drop':0,'ecn':0,'time':0},'q7':{'len':0,'drop':0,'ecn':0,'time':0}}
-        self.performance_update_flag = False
+        self.performance_update_flag = True
     def inpacket(self,times):
         #服从正态（高斯）分布，均值为到达率,方差为500Mbps,即0.125个单位
         DROP = []
@@ -99,13 +99,13 @@ class queue_simulation():
         send_num = []
 
         send = 0
-        while send<1  and num!=0:
+        while send!=1  and num!=0:
             if self.Scheduling_algorithm == "SP":
-                q, num = self.Strict_priority_algorithm()
+                q, num = self.Strict_priority_algorithm(1-send)
             elif self.Scheduling_algorithm == "WITTLE":
-                q, num = self.WITTLE_algorithm()
+                q, num = self.WITTLE_algorithm(1-send)
             elif self.Scheduling_algorithm == "MAX_QUEUE_LEN":
-                q, num = self.MAX_QUEUE_LEN_algorithm()
+                q, num = self.MAX_QUEUE_LEN_algorithm(1-send)
             if num!=0:
                 self.queue[q] = self.queue[q] - num
                 send_q.append(q)
@@ -114,10 +114,11 @@ class queue_simulation():
         # elif self.Scheduling_algorithm == "RANDOM":
         #     q,num = self.RANDOM_algorithm()
         self.action_Collect(times,send_q)
-        if self.print_log:
+        if self.print_log :
             if len(send_q) >0:
                 for i in range(len(send_q)):
                     self.log("time:{} send queue{} {} packets".format(times,send_q[i],send_num[i]))
+                self.log("time:{} send  {} packets".format(times,sum(send_num)))
             else:
                 self.log("Scheduling_algorithm name {} is error".format(self.Scheduling_algorithm))
 
@@ -303,14 +304,14 @@ class queue_simulation():
                 self.log("queue{} if full,drop {}packets".format(q, drop))
         self.queue[q] = self.queue[q] + come
         return  drop,0
-    def Strict_priority_algorithm(self):
+    def Strict_priority_algorithm(self,surplus):
         q = 0
         for _q in range(self.priority):
             if self.queue[_q]>0:
-                return _q,min(self.queue[_q],1)
+                return _q,min(self.queue[_q],surplus)
         return q,self.queue[q]
 
-    def WITTLE_algorithm(self):
+    def WITTLE_algorithm(self,surplus):
         q = 0
         while self.queue[q]==0 :
             q = q+1
@@ -321,9 +322,9 @@ class queue_simulation():
             if self.WITTLE[_q][self.EXP_cache[f'q{_q}'][0]]>WI:
                 WI = self.WITTLE[_q][self.EXP_cache[f'q{_q}'][0]]
                 q = _q
-        return q,min(self.queue[q],1)
+        return q,min(self.queue[q],surplus)
 
-    def MAX_QUEUE_LEN_algorithm(self):
+    def MAX_QUEUE_LEN_algorithm(self,surplus):
         QLEN = self.queue[0]
         q = 0
         for _q in range(self.priority-1):
@@ -332,7 +333,7 @@ class queue_simulation():
                 q = _q+1
         # if self.queue[q]>1:
         #     return q,1
-        return q,min(self.queue[q],1)
+        return q,min(self.queue[q],surplus)
 
     # def WITTLE_INSERT(self,WITTLE):
     #     for q in range(self.priority):
@@ -414,5 +415,8 @@ class queue_simulation():
             self.performance[f'q{q}']['ecn'] = (ecns*times+ecn)/(times+1)
             self.performance[f'q{q}']['len'] = (lens*times+self.queue[q])/(times+1)
             self.performance[f'q{q}']['time'] = times +1
-
+    def show_performance(self):
+        print(self.performance['q0']['time'])
+        for q in range(self.priority):
+            print(self.performance[f'q{q}']['len'],self.performance[f'q{q}']['ecn'])
 
