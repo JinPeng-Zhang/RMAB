@@ -147,7 +147,7 @@ class MDP():
            从EXP文件池中读取数据，计算转移概率
         '''
         fair = 1 + 1 / self.u_unit
-        init_p = init_ptran(qlen_size=self.qlen_size,drop_size=self.drop_size,u_unit=self.u_unit)
+        init_p = init_ptran(qlen_size=self.qlen_size,drop_size=self.drop_size,u_unit=self.u_unit).ptran
         self.ptran_len.clear()
         self.ptran_len.append(np.zeros(self.vs))
         self.ptran_len.append(np.zeros(self.vs))
@@ -217,8 +217,10 @@ class MDP():
                     self.R[a][s] = self.RF.Wreward(u, qlen, a,self.drop_ready,self.drop_s)
             self.drop_ready = False
 
-
-
+#
+# mdp = MDP(20,0.2,drop_size=1,R_class=W_fair_ecn_drop)
+# mdp.file_exp_to_ptran(PORT=2,q=0)
+# print(mdp.ptran[0][0])
 
 
 

@@ -55,11 +55,11 @@ for tim in range(100):
     if simulation.UP_LOAD== True:
         configure.Experience_upload(simulation.port_index)
         simulation.EXP_Clear()
-    if tim !=0 and tim%wittle_update_cycle==0:
+    if tim !=0 and tim%20==0:
         for q in range(simulation.priority):
             MDP_MODEL.file_exp_to_ptran(simulation.port_index,q)
-            WITTLE_MODEL.calculate_WITTLE(R1=MDP_MODEL.R[1],R0=MDP_MODEL.R[0],ptran=MDP_MODEL.ptran)
-            configure.WITTLE_UPDATE(WITTLE_MODEL.WI,simulation.port_index,q)
+            WI = WITTLE_MODEL.calculate_WITTLE(R1=MDP_MODEL.R[1],R0=MDP_MODEL.R[0],ptran=MDP_MODEL.ptran)
+            configure.WITTLE_UPDATE(WI,simulation.port_index,q)
             #print(simulation.WITTLE[q])
         #print(simulation.WITTLE)
 end = time.time()
